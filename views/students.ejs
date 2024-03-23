@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List of students</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="mt-3">All students</h1>
+      <div class="d-flex flex-row-reverse">
+        <div class="p-2">
+          <a href="/students/add" class="btn btn-success">ADD</a>
+        </div>
+      </div>
+      <div class="input-group mb-3 gap-2">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search with name or email"
+          id="name"
+        />
+        <div class="input-group-append">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            onclick="searchStudent()"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+      <br />
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% students.forEach(element => { %>
+          <tr>
+            <td><%= element.Name %></td>
+            <td><%= element.email %></td>
+            <td>
+              <a
+                href="/students/add?id=<%= element.id %>"
+                class="btn btn-warning"
+                >Update</a
+              >
+            </td>
+            <td>
+              <a
+                href="#"
+                data-student-id="<%= element.id %>"
+                class="btn btn-danger btn-delete"
+              >
+                Delete
+              </a>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+        <script>
+          document.querySelectorAll(".btn-delete").forEach((link) => {
+            link.addEventListener("click", function (event) {
+              event.preventDefault();
+              const studentId = this.getAttribute("data-student-id");
+
+              fetch(`/students/${studentId}`, {
+                method: "DELETE",
+              })
+                .then((res) => {
+                  //console.log('the response', res)
+                  location.reload();
+                })
+                .catch((error) => {
+                  console.error("Error:", error);
+                });
+            });
+          });
+
+          const searchStudent = async () => {
+            const name = document.getElementById("name").value;
+            const response = await fetch(`/students/search/${name}`, {
+              method: "GET",
+            });
+            const students = await response.json();
+
+            if (students?.length > 0) {
+              const table = document.querySelector("table");
+              table.style.display = "block";
+              const tbody = document.querySelector("table tbody");
+              tbody.innerHTML = "";
+              const emptyState = document.getElementById("empty");
+              emptyState.style.display = "none";
+              const row = tbody.insertRow();
+
+              const addUpdateButton = (student) => {
+                const updateCell = row.insertCell(2);
+                const updateButton = document.createElement("a");
+                updateButton.href = `/students/add?id=${student._id}`;
+                updateButton.className = "btn btn-warning";
+                updateButton.textContent = "Update";
+                updateCell.appendChild(updateButton);
+              };
+
+              const addDeleteButton = (student) => {
+                const deleteCell = row.insertCell(3);
+                const deleteButton = document.createElement("a");
+                deleteButton.href = "#";
+                deleteButton.setAttribute("data-student-id", student._id);
+                deleteButton.className = "btn btn-danger btn-delete";
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", function (event) {
+                  event.preventDefault();
+                  const studentId = this.getAttribute("data-student-id");
+
+                  fetch(`/students/${studentId}`, {
+                    method: "DELETE",
+                  })
+                    .then((res) => location.reload())
+                    .catch((error) => console.error("Error:", error));
+                });
+                deleteCell.appendChild(deleteButton);
+              };
+
+              students.forEach((student) => {
+                const nameCell = row.insertCell(0);
+                const emailCell = row.insertCell(1);
+                nameCell.textContent = student.Name;
+                emailCell.textContent = student.email;
+
+                addUpdateButton(student);
+                addDeleteButton(student);
+              });
+            } else {
+              const tbody = document.querySelector("table");
+              tbody.style.display = "none";
+              const emptyState = document.getElementById("empty");
+              emptyState.style.display = "flex";
+            }
+          };
+          const nameInput = document.getElementById("name");
+          nameInput.addEventListener("change", searchStudent);
+        </script>
+      </table>
+      <div
+        style="display: none; justify-content: center; align-items: center"
+        id="empty"
+      >
+        No students found
+      </div>
+    </div>
+  </body>
+</html>
